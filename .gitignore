@@ -49,6 +49,9 @@ BluetoothController/.idea/caches
 # External native build folder generated in Android Studio 2.2 and later
 BluetoothController/.externalNativeBuild
 
+#.idea
+BluetoothController/.idea/
+
 # Google Services (e.g. APIs or Firebase)
 BluetoothController/google-services.json
 
