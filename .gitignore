@@ -13,8 +13,9 @@ BluetoothController/bin/
 BluetoothController/gen/
 BluetoothController/out/
 
-# Python Virtualenv
+# Python Files
 BluetoothServer/.venv/
+BluetoothServer/__pycache__
 
 # Gradle files
 BluetoothController/.gradle/
