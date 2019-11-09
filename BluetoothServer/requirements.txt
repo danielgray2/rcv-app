@@ -1,0 +1,2 @@
+PyBluez==0.22
+RPi.GPIO==0.7.0
