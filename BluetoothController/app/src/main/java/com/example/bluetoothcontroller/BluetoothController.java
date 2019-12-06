@@ -21,6 +21,14 @@ import java.util.UUID;
 // Defines several constants used when transmitting messages between the
 // service and the UI.
 
+/*
+ * This handles all of the Bluetooth Communication. The important part is that
+ * a Bluetooth Controller is created with an open socket that allows communication
+ * between the phone and the vehicle.
+ *
+ * Most of this code was found in the android documentation: https://developer.android.com/guide/topics/connectivity/bluetooth
+ * Some parts were also gleaned from this open source library: https://github.com/johnhowe/BlueTerm
+ */
 public class BluetoothController {
     private static final String TAG = "MY_APP_DEBUG_TAG";
     private Handler handler; // handler that gets info from Bluetooth service
@@ -62,9 +70,9 @@ public class BluetoothController {
         return null;
     }
 
-    // We need to call this from the AcceptThread and the ConnectedThread
-    // Then we need to somehow get access to the input/output and the
-    // read/write
+    // This is called from the AcceptThread and the ConnectedThread.
+    // It provides access to the data being read/written to/from
+    // the vehicle
     public void manageMyConnectedSocket(BluetoothSocket socket){
         if(connectedThread != null){
             connectedThread.cancel();
@@ -139,6 +147,11 @@ public class BluetoothController {
         }
     }
 
+    /*
+    * This class is responsible for creating sockets
+    * that connect to the bluetooth server that is running on
+    * the vehicle.
+     */
     private class ClientThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
@@ -160,6 +173,7 @@ public class BluetoothController {
             mmSocket = tmp;
         }
 
+        // Connects the socket
         @Override
         public void run() {
             // Cancel discovery because it otherwise slows down the connection.
@@ -281,7 +295,5 @@ public class BluetoothController {
         public static final int MESSAGE_READ = 0;
         public static final int MESSAGE_WRITE = 1;
         public static final int MESSAGE_TOAST = 2;
-
-        // ... (Add other message types here as needed.)
     }
 }

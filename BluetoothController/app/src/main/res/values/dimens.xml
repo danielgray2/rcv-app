@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+This defines some of the dimensions used in the activities
+
+-->
+<resources>
+    <dimen name="seek_bar_thickness">10dp</dimen>
+    <dimen name="seek_bar_thumb_size">90dp</dimen>
+</resources>

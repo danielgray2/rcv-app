@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+
+This defines the hexadecimal values of colors
+
+-->
 <resources>
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
+
+    <color name="seek_bar_background">#6DC066</color>
+    <color name="seek_bar_progress">#6DC066</color>
+    <color name="seek_bar_secondary_progress">#FFFFFF</color>
 </resources>
