@@ -1,36 +1,26 @@
-# Importing the Bluetooth Socket library
 import bluetooth
-
-# Importing the GPIO library to use the GPIO pins of Raspberry pi
 import RPi.GPIO as GPIO
+import pigpio
+import json
 
 class BtServer:
 	def __init__(self):
 		# Setup pins
-		self.FORWARD_PIN = 40
-		self.BACKWARD_PIN = 38
-		self.LEFT_PIN = 13
-		self.RIGHT_PIN = 15
+		self.SPEED_PIN = 21
+		self.LATERAL_PIN = 20
 
 		# Setup commands
-		self.MOVE_FORWARD = "moveForward"
-		self.STOP_MOVE_FORWARD = "stopMoveForward"
-		self.MOVE_BACKWARD = "moveBackward"
-		self.STOP_MOVE_BACKWARD = "stopMoveBackward"
-		self.TURN_LEFT = "turnLeft"
-		self.STOP_TURN_LEFT = "stopTurnLeft"
-		self.TURN_RIGHT = "turnRight"
-		self.STOP_TURN_RIGHT = "stopTurnRight"
+		self.UPDATE_SPEED = "s"
+		self.UPDATE_DIRECTION = "d"
 		self.SHUTDOWN = "shutdown"
+		self.READY_FOR_UPDATE = "rfu"
 
 		# Intialize GPIO
-		GPIO.setmode(GPIO.BOARD)
-		self.pin_array = [self.FORWARD_PIN, self.BACKWARD_PIN, self.LEFT_PIN, self.RIGHT_PIN]
-		GPIO.setup(self.pin_array, GPIO.OUT)
+		self.pi = pigpio.pi()
 
 		# Creating Socket Bluetooth RFCOMM communication
 		self.server = self.create_bt_server()
-	
+
 	def create_bt_server(self):
 		server = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
 		host = ""
@@ -51,60 +41,60 @@ class BtServer:
 		self.client, address = self.server.accept()
 		print("Connected To", address)
 		print("Client:", self.client)
+		self.client.send(self.READY_FOR_UPDATE)
 
-		# Create a dictionary we use as a switch statement
-		switch_dict = self.create_switch_dict()
-
-		try:
-			while True:
+		while True:
+			try:
         		# Receivng the data. 
 				data = self.client.recv(1024).decode("utf-8") # 1024 is the buffer size.
-				print(data)
+				print("Here is the data: " + str(data))
+				parsed_data = json.loads(data)
+				if(parsed_data['e'] == self.UPDATE_SPEED):
+					self.update_speed(int(parsed_data['v']))
+				elif(parsed_data['e'] == self.UPDATE_DIRECTION):
+					self.update_direction(int(parsed_data['v']))
+				else:
+					print("The JSON sent was invalid")
+				self.client.send(self.READY_FOR_UPDATE)
 
-				# Get the function and execute it
-				func = switch_dict.get(data, lambda: "Invalid input")
-				func()
-				
-		except Exception as e:
-			print(f'There was an issue receiving commands from the receiver - {e}')
-			self.stop_pins()
+			except json.decoder.JSONDecodeError as e:
+				print(f'There was an issue parsing json. Skipping that value. {e} ' + str(parsed_data))
 
-	def create_switch_dict(self):
-		return {	
-			self.MOVE_FORWARD: self.move_forward,
-			self.STOP_MOVE_FORWARD: self.stop_move_forward,
-			self.MOVE_BACKWARD: self.move_backward,
-			self.STOP_MOVE_BACKWARD: self.stop_move_backward,
-			self.TURN_LEFT: self.turn_left,
-			self.STOP_TURN_LEFT: self.stop_turn_left,
-			self.TURN_RIGHT: self.turn_right,
-			self.STOP_TURN_RIGHT: self.stop_turn_right,
-			self.SHUTDOWN: self.shutdown
-		}
+			except Exception as e:
+				print(f'There was an issue receiving commands from the receiver - {e}')
+				self.client.close()
+				self.server.close()
+				self.pi.set_servo_pulsewidth(self.SPEED_PIN, 0)
+				self.server = self.create_bt_server()
+				self.start_listening()
 
-	def move_forward(self):
-		GPIO.output(self.FORWARD_PIN, True)
+	def update_speed(self, value):
+		#slope = -5.85
+		#y_intercept = 1455
+		#pwm_value = slope * value + y_intercept
+		#self.pi.set_servo_pulsewidth(self.SPEED_PIN, pwm_value)
+		slope = 10
+		y_intercept = 1000
+		pwm_value = slope * value + y_intercept
+		self.pi.set_servo_pulsewidth(self.SPEED_PIN, pwm_value)
+		print("Here is the PWM: " + str(pwm_value))
 
-	def stop_move_forward(self):
-		GPIO.output(self.FORWARD_PIN, False)
-
-	def move_backward(self):
-		GPIO.output(self.BACKWARD_PIN, True)
-
-	def stop_move_backward(self):
-		GPIO.output(self.BACKWARD_PIN, False)
-
-	def turn_right(self):
-		GPIO.output(self.RIGHT_PIN, True)
-
-	def stop_turn_right(self):
-		GPIO.output(self.RIGHT_PIN, False)
-
-	def turn_left(self):
-		GPIO.output(self.LEFT_PIN, True)
-
-	def stop_turn_left(self):
-		GPIO.output(self.LEFT_PIN, False)
+	def update_direction(self, value):
+		#slope = 0.0388
+		#y_intercept = 7
+		#processed_value = abs((value - 50)) % 100
+		#print("Here is the processed value: " + str(processed_value))
+		#if(value > 50):
+		#	processed_value = -processed_value
+		#pwm_value = slope * processed_value + y_intercept
+		##print("Here is the pwm_value: " + str(pwm_value))
+		#self.lateral_pwm.ChangeDutyCycle(pwm_value)
+		slope = -3.8
+		y_intercept = 2100
+		pwm_value = slope * value + y_intercept
+		self.pi.set_servo_pulsewidth(self.LATERAL_PIN, pwm_value)
+		print("RAW_VALUE: " + str(value))
+		print("PWM_VALUE: " + str(pwm_value))
 	
 	def shutdown(self):
 		# Making all the output pins LOW
